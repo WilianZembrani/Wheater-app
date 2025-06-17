@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import './Weather.css'
 import search_icon from '../assets/search.png'
 import clear_icon from '../assets/clear.png'
@@ -13,6 +13,7 @@ import wind_icon from '../assets/wind.png'
 
 const Weather = () => {
 
+    const inputRef = useRef()
     const [weatherData, setWeatherData] = useState(false);
     const AllIcons = {
         '01d': clear_icon,
@@ -33,10 +34,20 @@ const Weather = () => {
     }
 
     const search = async (city) => {
+        if (city === '') {
+            alert('Por favor, insira uma cidade válida.');
+            return
+        }
         try {
             const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${import.meta.env.VITE_APP_ID}`;
             const response = await fetch(url);
             const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message)
+                return;
+            }
+
             console.log(data);
             const icon = AllIcons[data.weather[0].icon] || clear_icon;
             setWeatherData({
@@ -48,40 +59,44 @@ const Weather = () => {
             })
 
         } catch (error) {
-            console.error('Erro ao buscar dados:', error);
+            setWeatherData(false);
+            console.error('Erro ao buscar dados do tempo:', error);
+            alert('Erro ao buscar dados do tempo. Por favor, tente novamente.');
         }
     }
 
     useEffect(() => {
-        search('London'); // Default city
-    }, [])
+        search('Brazil');
+    }, []);
 
 
     return (
         <div className='weather'>
             <div className='search-bar'>
-                <input type="text" placeholder='Pesquisa' />
-                <img src={search_icon} alt="" />
+                <input ref={inputRef} type="text" placeholder='Pesquisa' />
+                <img src={search_icon} alt="" onClick={() => search(inputRef.current.value)} />
             </div>
-            <img src={clear_icon} alt="" className='weather-icon' />
-            <p className='temperature'>{weatherData.temperature}ºC</p>
-            <p className='location'>{weatherData.location}</p>
-            <div className="weather-data">
-                <div className="col">
-                    <img src={humidity_icon} alt="" />
-                    <div>
-                        <p>{weatherData.humidity} %</p>
-                        <span>Umidade</span>
+            {weatherData ? <>
+                <img src={weatherData.icon} alt="" className='weather-icon' />
+                <p className='temperature'>{weatherData.temperature}ºC</p>
+                <p className='location'>{weatherData.location}</p>
+                <div className="weather-data">
+                    <div className="col">
+                        <img src={humidity_icon} alt="" />
+                        <div>
+                            <p>{weatherData.humidity} %</p>
+                            <span>Umidade</span>
+                        </div>
+                    </div>
+                    <div className="col">
+                        <img src={wind_icon} alt="" />
+                        <div>
+                            <p>{weatherData.windSpeed} Km/h</p>
+                            <span>Velocidade do vento</span>
+                        </div>
                     </div>
                 </div>
-                <div className="col">
-                    <img src={wind_icon} alt="" />
-                    <div>
-                        <p>{weatherData.windSpeed} Km/h</p>
-                        <span>Velocidade do vento</span>
-                    </div>
-                </div>
-            </div>
+            </> : <></>}
         </div>
     )
 }
